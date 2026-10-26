@@ -193,3 +193,15 @@ h3 {
     color: var(--color-muted);
     font-size: 0.8rem;
 }
+.day-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 24px;
+}
+
+.day-menu + .day-menu {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid var(--color-border);
+}

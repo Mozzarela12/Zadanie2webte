@@ -19,7 +19,7 @@ const SOURCES = [
         parse: parseMachnac
     }
 ];
-
+const menus = {};
 let selectedDay = new Date().getDay() - 1;
 
 if (selectedDay < 0 || selectedDay > 4) {
@@ -256,7 +256,7 @@ function parseMachnac(html) {
     return menu;
 }
 
-function renderMenu(menu, dayIndex, container) {
+function renderDay(menu, dayIndex, container) {
     const day = menu[dayIndex];
     container.empty();
     const title = day.date ? `${day.day} ${day.date}` : day.day;
@@ -312,6 +312,49 @@ function renderMenu(menu, dayIndex, container) {
 
     container.append(list);
 }
+function renderMenu(menu, dayIndex, container) {
+    container.empty();
+
+    if (dayIndex === -1) {
+        menu.forEach((day, index) => {
+            const section = $("<section>", { class: "day-menu" });
+
+            renderDay(menu, index, section);
+            container.append(section);
+        });
+    } else {
+        renderDay(menu, dayIndex, container);
+    }
+}
+
+function updateDayButtons() {
+    $("#day-tabs button").each(function () {
+        const button = $(this);
+        const active = Number(button.attr("data-day")) === selectedDay;
+
+        button.toggleClass("btn-primary", active);
+        button.toggleClass("btn-outline-primary", !active);
+        button.attr("aria-pressed", String(active));
+    });
+}
+
+function renderAllMenus() {
+    SOURCES.forEach(source => {
+        const menu = menus[source.id];
+
+        if (menu) {
+            renderMenu(menu, selectedDay, $("#" + source.id + "-menu"));
+        }
+    });
+
+    updateDayButtons();
+
+    $("#status").text(
+        selectedDay === -1
+            ? "Zobrazený celý týždeň."
+            : "Zvolený deň: " + DAY_NAMES[selectedDay]
+    );
+}
 
 async function loadRestaurant(source) {
     const container = $("#" + source.id + "-menu");
@@ -328,6 +371,7 @@ async function loadRestaurant(source) {
         });
 
         const menu = source.parse(html);
+        menus[source.id] = menu;
         renderMenu(menu, selectedDay, container);
 
         const updatedAt = new Date();
@@ -351,9 +395,16 @@ async function loadRestaurant(source) {
 
 $(async function () {
     $("#year").text(new Date().getFullYear());
+    updateDayButtons();
+
+    $("#day-tabs").on("click", "button", function () {
+        selectedDay = Number($(this).attr("data-day"));
+        renderAllMenus();
+    });
+
     $("#status").text("Načítavam menu…");
 
     await Promise.all(SOURCES.map(loadRestaurant));
 
-    $("#status").text("Zvolený deň: " + DAY_NAMES[selectedDay]);
+    renderAllMenus();
 });
