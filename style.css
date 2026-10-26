@@ -91,6 +91,7 @@ h3 {
     display: flex;
     flex-wrap: wrap;
     gap: 24px;
+    align-items: flex-start;
 }
 
 .restaurant-card {
@@ -145,4 +146,50 @@ h3 {
     .restaurant-card {
         flex-basis: 100%;
     }
+}
+.restaurant-menu {
+    width: 100%;
+    margin-bottom: 24px;
+}
+
+.menu-day {
+    margin-bottom: 16px;
+    font-size: 1.1rem;
+}
+
+.menu-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.menu-item {
+    padding: 12px;
+    border-bottom: 1px solid var(--color-border);
+    border-left: 3px solid transparent;
+}
+
+.menu-item.soup {
+    background-color: #eef3f6;
+    border-left-color: var(--color-primary);
+}
+
+.menu-item p {
+    margin: 0;
+}
+
+.menu-type {
+    color: var(--color-muted);
+    font-size: 0.8rem;
+}
+
+.menu-price {
+    margin-top: 6px !important;
+    font-weight: 700;
+}
+
+.menu-details,
+.last-updated {
+    color: var(--color-muted);
+    font-size: 0.8rem;
 }
