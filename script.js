@@ -356,42 +356,129 @@ function renderAllMenus() {
     );
 }
 
-async function loadRestaurant(source) {
+function readStoredMenu(id) {
+    try {
+        const data = JSON.parse(localStorage.getItem("obedove-menu-" + id));
+
+        if (!data || typeof data.savedAt !== "string" ||
+            new Date(data.savedAt).toDateString() !== new Date().toDateString()) {
+            return null;
+        }
+
+        const validMenu = Array.isArray(data.menu) &&
+            data.menu.length === DAY_NAMES.length &&
+            data.menu.every((day, index) =>
+                day && day.day === DAY_NAMES[index] &&
+                Array.isArray(day.items) &&
+                day.items.every(item => item &&
+                    typeof item.type === "string" &&
+                    typeof item.name === "string")
+            );
+
+        return validMenu ? data : null;
+    } catch {
+        return null;
+    }
+}
+
+async function loadRestaurant(source, forceRefresh = false) {
     const container = $("#" + source.id + "-menu");
     const updated = $("#" + source.id + "-updated");
 
+    delete menus[source.id];
     container.text("Načítavam menu…");
     updated.empty();
 
     try {
-        const html = await $.ajax({
-            url: source.localUrl,
-            dataType: "text",
-            timeout: 10000
-        });
+        let data = forceRefresh ? null : readStoredMenu(source.id);
+        let storageFailed = false;
 
-        const menu = source.parse(html);
-        menus[source.id] = menu;
-        renderMenu(menu, selectedDay, container);
+        if (!data) {
+            const html = await $.ajax({
+                url: source.localUrl,
+                dataType: "text",
+                timeout: 10000,
+                cache: false
+            });
 
-        const updatedAt = new Date();
+            const menu = source.parse(html);
+            data = { savedAt: new Date().toISOString(), menu };
+
+            try {
+                localStorage.setItem(
+                    "obedove-menu-" + source.id,
+                    JSON.stringify(data)
+                );
+            } catch {
+                storageFailed = true;
+            }
+        }
+
+        menus[source.id] = data.menu;
+        renderMenu(data.menu, selectedDay, container);
 
         updated.append(
             "Posledná aktualizácia: ",
             $("<time>", {
-                datetime: updatedAt.toISOString(),
-                text: updatedAt.toLocaleString("sk-SK")
+                datetime: data.savedAt,
+                text: new Date(data.savedAt).toLocaleString("sk-SK")
             })
         );
+
+        if (storageFailed) {
+            updated.append(" · Údaje sa nepodarilo uložiť do prehliadača.");
+        }
+
+        return true;
     } catch (error) {
         const message = error?.message ||
             "Skontroluj súbor " + source.localUrl + ".";
 
-        container.text(
-            "Menu " + source.name + " sa nepodarilo načítať. " + message
-        );
+        container.text("Menu " + source.name + " sa nepodarilo načítať. " + message);
+        return false;
     }
 }
+
+async function loadMenus(forceRefresh = false) {
+    const buttons = $("#refresh-menu, #clear-menu");
+    buttons.prop("disabled", true);
+    $("#status").text("Načítavam menu…");
+
+    try {
+        const results = await Promise.all(
+            SOURCES.map(source => loadRestaurant(source, forceRefresh))
+        );
+
+        renderAllMenus();
+
+        if (results.includes(false)) {
+            $("#status").append(" Niektoré menu sa nepodarilo načítať.");
+        }
+    } finally {
+        buttons.prop("disabled", false);
+    }
+}
+
+function clearMenus() {
+    let storageFailed = false;
+
+    SOURCES.forEach(source => {
+        try {
+            localStorage.removeItem("obedove-menu-" + source.id);
+        } catch {
+            storageFailed = true;
+        }
+
+        delete menus[source.id];
+        $("#" + source.id + "-menu").text("Menu nie je načítané.");
+        $("#" + source.id + "-updated").empty();
+    });
+
+    $("#status").text(storageFailed
+        ? "Menu je vyprázdnené, ale uložené údaje sa nepodarilo vymazať."
+        : "Údaje boli vymazané. Klikni na Aktualizovať menu.");
+}
+
 function applyRestaurantFilters() {
     $("#restaurant-filters input[type='checkbox']").each(function () {
         const id = $(this).val();
@@ -405,7 +492,6 @@ function applyRestaurantFilters() {
 
 $(async function () {
     $("#year").text(new Date().getFullYear());
-
     updateDayButtons();
 
     $("#day-tabs").on("click", "button", function () {
@@ -419,11 +505,12 @@ $(async function () {
         applyRestaurantFilters
     );
 
+    $("#refresh-menu").on("click", function () {
+        loadMenus(true);
+    });
+
+    $("#clear-menu").on("click", clearMenus);
+
     applyRestaurantFilters();
-
-    $("#status").text("Načítavam menu…");
-
-    await Promise.all(SOURCES.map(loadRestaurant));
-
-    renderAllMenus();
+    await loadMenus();
 });
