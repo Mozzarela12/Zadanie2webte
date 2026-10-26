@@ -1,4 +1,18 @@
 const DAY_NAMES = ["Pondelok", "Utorok", "Streda", "Štvrtok", "Piatok"];
+const SOURCES = [
+    {
+        id: "eat-and-meet",
+        name: "Eat & Meet",
+        localUrl: "source/eat-and-meet.html",
+        parse: parseEatAndMeet
+    },
+    {
+        id: "drag",
+        name: "DRAG",
+        localUrl: "source/drag.html",
+        parse: parseDrag
+    }
+];
 
 let selectedDay = new Date().getDay() - 1;
 
@@ -59,6 +73,98 @@ function parseEatAndMeet(html) {
 
     return menu;
 }
+function parseDragItem(text, type, price = "") {
+    let name = text.replace(/\s+/g, " ").trim();
+    let allergens = "";
+    let weight = null;
+
+    const allergenPattern = /\/\s*(\d+(?:\s*,\s*\d+)*)\s*\/\s*$/;
+    const allergenMatch = name.match(allergenPattern);
+
+    if (allergenMatch) {
+        allergens = allergenMatch[1].replace(/\s+/g, "");
+        name = name.replace(allergenPattern, "").trim();
+    }
+
+    const weightPattern = /^\d+(?:[.,]\d+)?\s*(?:kg|g|ml|l)\b(?:\s*\/\s*\d+(?:[.,]\d+)?\s*(?:kg|g|ml|l)\b)*/i;
+    const weightMatch = name.match(weightPattern);
+
+    if (weightMatch) {
+        weight = weightMatch[0].replace(/\s+/g, "");
+        name = name.slice(weightMatch[0].length).replace(/^\.\s*/, "").trim();
+    }
+
+    return {
+        type,
+        name,
+        price: price.replace(/\bEUR\b/gi, "€"),
+        discountPrice: "",
+        allergens,
+        weight
+    };
+}
+
+function parseDrag(html) {
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    const dayIds = ["pondelok", "utorok", "streda", "stvrtok", "piatok"];
+
+    const menu = DAY_NAMES.map((dayName, index) => {
+        const dayElement = doc.querySelector("#" + dayIds[index]);
+        const items = [];
+
+        if (dayElement) {
+            const soupHeading = Array.from(
+                dayElement.querySelectorAll(".menu_box_title")
+            ).find(element => getText(element).toLowerCase() === "polievka");
+
+            let soupText = "";
+            let node = soupHeading?.nextSibling;
+
+            while (node) {
+                if (
+                    node.nodeType === 1 &&
+                    node.matches(".menu_box_title, table, script")
+                ) {
+                    break;
+                }
+
+                if (node.nodeType === 1 || node.nodeType === 3) {
+                    soupText += node.textContent;
+                }
+
+                node = node.nextSibling;
+            }
+
+            const soup = parseDragItem(soupText, "Polievka");
+
+            if (soup.name) {
+                items.push(soup);
+            }
+
+            dayElement.querySelectorAll("table tr").forEach(row => {
+                const cells = row.querySelectorAll("td");
+
+                const item = parseDragItem(
+                    getText(cells[0]),
+                    "Hlavné jedlo",
+                    getText(cells[1])
+                );
+
+                if (item.name) {
+                    items.push(item);
+                }
+            });
+        }
+
+        return { day: dayName, date: null, items };
+    });
+
+    if (menu.every(day => day.items.length === 0)) {
+        throw new Error("V HTML súbore sa nenašlo menu DRAG.");
+    }
+
+    return menu;
+}
 
 function renderMenu(menu, dayIndex, container) {
     const day = menu[dayIndex];
@@ -87,6 +193,9 @@ function renderMenu(menu, dayIndex, container) {
         }));
 
         const details = [];
+        if (item.weight) {
+            details.push("Množstvo: " + item.weight);
+        }
 
         if (item.discountPrice) {
             details.push("S dotáciou: " + item.discountPrice);
@@ -109,25 +218,26 @@ function renderMenu(menu, dayIndex, container) {
     container.append(list);
 }
 
-async function loadEatAndMeet() {
-    const container = $("#eat-and-meet-menu");
+async function loadRestaurant(source) {
+    const container = $("#" + source.id + "-menu");
+    const updated = $("#" + source.id + "-updated");
+
     container.text("Načítavam menu…");
+    updated.empty();
 
     try {
         const html = await $.ajax({
-            url: "source/eat-and-meet.html",
+            url: source.localUrl,
             dataType: "text",
             timeout: 10000
         });
 
-        const menu = parseEatAndMeet(html);
+        const menu = source.parse(html);
         renderMenu(menu, selectedDay, container);
-
-        $("#status").text("Zobrazený deň: " + DAY_NAMES[selectedDay]);
 
         const updatedAt = new Date();
 
-        $("#eat-and-meet-updated").empty().append(
+        updated.append(
             "Posledná aktualizácia: ",
             $("<time>", {
                 datetime: updatedAt.toISOString(),
@@ -136,14 +246,19 @@ async function loadEatAndMeet() {
         );
     } catch (error) {
         const message = error?.message ||
-            "Skontroluj súbor source/eat-and-meet.html.";
+            "Skontroluj súbor " + source.localUrl + ".";
 
-        container.text("Menu sa nepodarilo načítať. " + message);
-        $("#status").text("Menu Eat & Meet nie je dostupné.");
+        container.text(
+            "Menu " + source.name + " sa nepodarilo načítať. " + message
+        );
     }
 }
 
-$(function () {
+$(async function () {
     $("#year").text(new Date().getFullYear());
-    loadEatAndMeet();
+    $("#status").text("Načítavam menu…");
+
+    await Promise.all(SOURCES.map(loadRestaurant));
+
+    $("#status").text("Zvolený deň: " + DAY_NAMES[selectedDay]);
 });
