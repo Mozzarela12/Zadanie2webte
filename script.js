@@ -11,6 +11,12 @@ const SOURCES = [
         name: "DRAG",
         localUrl: "source/drag.html",
         parse: parseDrag
+    },
+    {
+        id: "machnac",
+        name: "Machnáč",
+        localUrl: "source/machnac.html",
+        parse: parseMachnac
     }
 ];
 
@@ -165,11 +171,100 @@ function parseDrag(html) {
 
     return menu;
 }
+function parseMachnac(html) {
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    const menu = DAY_NAMES.map(day => ({ day, date: null, items: [] }));
+
+    const prices = Array.from(doc.querySelectorAll(".denne_menu_ceny h4"))
+        .map(getText)
+        .filter(text => text.includes("€"));
+
+    const mainPrice = prices
+        .filter(text => text.toLowerCase().includes("hlavné jedlo"))
+        .join(" / ");
+
+    const soupPrice = prices.find(text =>
+        text.toLowerCase().includes("menu polievka")
+    ) || "";
+
+    let currentDay = null;
+
+    const elements = doc.querySelectorAll(
+        ".menu-container .item-name, .menu-container .item-menu > h4"
+    );
+
+    elements.forEach(element => {
+        if (element.matches(".item-name")) {
+            const title = getText(element.querySelector("h2"));
+
+            currentDay = menu.find(day =>
+                title === day.day || title.startsWith(day.day + " ")
+            ) || null;
+
+            if (currentDay) {
+                currentDay.date = title.slice(currentDay.day.length).trim() || null;
+            }
+
+            return;
+        }
+
+        let name = getText(element);
+
+        if (!currentDay || !name) {
+            return;
+        }
+
+        let weight = null;
+        let allergens = "";
+
+        const weightMatch = name.match(/^\(([^)]+)\)\s*/);
+
+        if (weightMatch) {
+            weight = weightMatch[1].trim();
+            name = name.slice(weightMatch[0].length).trim();
+        }
+
+        const allergenMatch = name.match(/\s+(\d+(?:\s*,\s*\d+)*)$/);
+
+        if (allergenMatch) {
+            allergens = allergenMatch[1].replace(/\s+/g, "");
+            name = name.slice(0, allergenMatch.index).trim();
+        }
+
+        if (!name) {
+            return;
+        }
+
+        const isSoup = weight
+            ? /(?:ml|l)$/i.test(weight)
+            : currentDay.items.length === 0;
+
+        currentDay.items.push({
+            type: isSoup ? "Polievka" : "Hlavné jedlo",
+            name,
+            price: isSoup ? soupPrice : mainPrice,
+            discountPrice: "",
+            allergens,
+            weight
+        });
+    });
+
+    if (menu.every(day => day.items.length === 0)) {
+        throw new Error("V HTML súbore sa nenašlo menu Machnáč.");
+    }
+
+    return menu;
+}
 
 function renderMenu(menu, dayIndex, container) {
     const day = menu[dayIndex];
     container.empty();
-    container.append($("<h4>", { text: day.day, class: "menu-day" }));
+    const title = day.date ? `${day.day} ${day.date}` : day.day;
+
+    container.append($("<h4>", {
+        text: title,
+        class: "menu-day"
+    }));
 
     if (day.items.length === 0) {
         container.append($("<p>", {
