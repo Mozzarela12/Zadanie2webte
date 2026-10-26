@@ -43,6 +43,29 @@
             <button type="button" class="btn btn-outline-primary" data-day="4" aria-pressed="false">Piatok</button>
             <button type="button" class="btn btn-outline-primary" data-day="-1" aria-pressed="false">Celý týždeň</button>
         </div>
+        <fieldset id="restaurant-filters" class="restaurant-filters">
+            <legend>Zobraziť reštaurácie</legend>
+
+            <div class="filter-options">
+                <label>
+                    <input class="form-check-input" type="checkbox"
+                           value="eat-and-meet" checked>
+                    Eat &amp; Meet
+                </label>
+
+                <label>
+                    <input class="form-check-input" type="checkbox"
+                           value="drag" checked>
+                    DRAG
+                </label>
+
+                <label>
+                    <input class="form-check-input" type="checkbox"
+                           value="machnac" checked>
+                    Machnáč
+                </label>
+            </div>
+        </fieldset>
         <p id="status" role="status">Menu zatiaľ nie je načítané.</p>
 
         <div id="restaurants" class="restaurants">

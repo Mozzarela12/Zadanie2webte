@@ -392,15 +392,34 @@ async function loadRestaurant(source) {
         );
     }
 }
+function applyRestaurantFilters() {
+    $("#restaurant-filters input[type='checkbox']").each(function () {
+        const id = $(this).val();
+        const visible = $(this).prop("checked");
+
+        $("#" + id + "-menu")
+            .closest(".restaurant-card")
+            .toggle(visible);
+    });
+}
 
 $(async function () {
     $("#year").text(new Date().getFullYear());
+
     updateDayButtons();
 
     $("#day-tabs").on("click", "button", function () {
         selectedDay = Number($(this).attr("data-day"));
         renderAllMenus();
     });
+
+    $("#restaurant-filters").on(
+        "change",
+        "input[type='checkbox']",
+        applyRestaurantFilters
+    );
+
+    applyRestaurantFilters();
 
     $("#status").text("Načítavam menu…");
 
