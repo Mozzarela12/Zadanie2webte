@@ -1,80 +1,69 @@
 # Obedové menu v okolí FEI STU
 
-# Autor: Samuel Hrdlička
+Autor: Samuel Hrdlička
 
-# 
+Školský projekt na zobrazenie obedového menu troch reštaurácií v okolí FEI STU. Aplikácia používa HTML, CSS a JavaScript a funguje na strane klienta.
 
-# Školský projekt na zobrazenie obedového menu troch reštaurácií v okolí FEI STU. Aplikácia používa HTML, CSS a JavaScript a pracuje na strane klienta.
+## Spustenie
 
-# Spustenie
+Projekt otvorte vo WebStorme a súbor `index.html` spustite pomocou Open in Browser cez lokálny HTTP server. Stránku spúšťajte cez HTTP, nie priamym otvorením súboru cez `file://`.
 
-# Projekt otvorte vo WebStorme a súbor index.html spustite pomocou Open in Browser cez lokálny HTTP server.
+Na načítanie knižníc Bootstrap a jQuery z CDN je potrebné internetové pripojenie.
 
-# 
+## Zdroje menu
 
-# Stránku otvárajte cez adresu http://localhost, nie priamo cez file://.
+- Eat & Meet: https://eatandmeet.sk/tyzdenne-menu
+- DRAG: https://www.restauracia-drag.sk/restauracia-drag
+- Machnáč: https://machnac.sk/denneMenu.html
 
-# 
+Lokálne HTML kópie zdrojových stránok sú uložené v priečinku `source`.
 
-# Na načítanie knižníc Bootstrap a jQuery z CDN je potrebné internetové pripojenie.
+## Spracovanie údajov
 
-# Zdroje menu
+HTML súbory sa načítavajú asynchrónne pomocou jQuery AJAX. DOMParser vytvorí dokument, z ktorého samostatný parser pre každú reštauráciu vyberie potrebné údaje.
 
-# \- Eat \& Meet
+Eat & Meet sa spracúva zo sekcií dní a položiek menu, DRAG z nadpisov a tabuliek a Machnáč z blokov denného menu.
 
-# \- DRAG
+Údaje sa prevedú do jednotnej štruktúry dní a jedál. Spracúvajú sa názvy jedál, typy položiek, ceny a dostupné dátumy, alergény a množstvá. Cudzí HTML kód sa nevkladá priamo do stránky.
 
-# \- Machnáč
+## Ovládanie
 
-# Lokálne HTML kópie sú uložené v priečinku source.
+Používateľ si môže vybrať deň od pondelka do piatka alebo zobraziť celý týždeň. Pri otvorení stránky je zvolený aktuálny pracovný deň, cez víkend pondelok.
 
-# Spracovanie údajov
+Checkboxy umožňujú zobraziť alebo skryť jednotlivé reštaurácie. Prepínanie dní a filtrovanie prebieha bez obnovenia stránky.
 
-# HTML súbory sa načítavajú asynchrónne pomocou jQuery AJAX. DOMParser vytvorí dokument, z ktorého samostatné parsery vyberú údaje pre jednotlivé reštaurácie.
+Tlačidlo Aktualizovať menu vynúti nové načítanie a spracovanie lokálnych HTML súborov. Tlačidlo Vymazať údaje odstráni uložené aj zobrazené menu.
 
-# 
+Pri každej reštaurácii sa zobrazuje dátum a čas poslednej aktualizácie. Počas načítania sa zobrazuje informácia o jeho priebehu.
 
-# Eat \& Meet sa spracúva zo sekcií dní a položiek menu, DRAG z nadpisov a tabuliek a Machnáč z blokov denného menu.
+## Ukladanie údajov
 
-# 
+Spracované menu sa ukladá do localStorage samostatne pre každú reštauráciu spolu s časom uloženia.
 
-# Výsledkom je jednotná štruktúra dní a jedál. Spracúvajú sa názvy, typy jedál, ceny a dostupné dátumy, alergény a množstvá. Cudzí HTML kód sa nevkladá priamo do stránky.
+Ak sú údaje uložené v aktuálny deň, pri ďalšom otvorení stránky sa použijú bez opätovného načítania zdrojového súboru. Staršie údaje sa nahradia novým načítaním.
 
-# Ovládanie a ukladanie
+Nové jedlá sa zobrazia po nahradení súborov v priečinku `source` aktuálnymi HTML kópiami a kliknutí na Aktualizovať menu.
 
-# \- Výber dňa od pondelka do piatka alebo celého týždňa.
+## Ošetrenie chýb
 
-# \- Predvolený je aktuálny pracovný deň, cez víkend pondelok.
+Pri nedostupnom súbore alebo nerozpoznanej štruktúre sa zobrazí chybová správa pri príslušnej reštaurácii. Ostatné reštaurácie sa načítajú nezávisle.
 
-# \- Checkboxy umožňujú zobraziť alebo skryť reštaurácie.
+Ak menu na vybraný deň chýba, zobrazí sa informácia o jeho nedostupnosti. Chýbajúca cena sa označí textom Cena neuvedená.
 
-# \- Spracované údaje sa ukladajú do localStorage pre každú reštauráciu.
+## Použité knižnice a font
 
-# \- Údaje uložené dnes sa pri ďalšom otvorení použijú bez načítania zdroja.
+- Bootstrap 5.3.8 – štýly ovládacích prvkov a kariet, licencia MIT: https://getbootstrap.com/
+- jQuery 4.0.0 – AJAX, udalosti a práca s DOM, licencia MIT: https://jquery.com/
+- Inter – lokálny font vo formáte WOFF2, licencia SIL Open Font License 1.1: https://rsms.me/inter/
 
-# \- Aktualizovať menu vynúti nové načítanie lokálnych HTML súborov.
+Font sa načítava pomocou `@font-face`. Súbor fontu je `fonts/InterVariable.woff2` a text jeho licencie je uložený v `fonts/LICENSE.txt`.
 
-# \- Vymazať údaje odstráni uložené aj zobrazené menu.
+## Validácia
 
-# \- Pri každej reštaurácii sa zobrazuje čas poslednej aktualizácie.
+HTML sa overuje pomocou https://validator.w3.org/ a CSS pomocou https://jigsaw.w3.org/css-validator/.
 
-# Nové jedlá sa zobrazia po nahradení súborov v priečinku source aktuálnymi HTML kópiami a následnej aktualizácii menu.
+Výstupy z oboch validátorov treba uložiť do priečinka `docs`.
 
-# Knižnice a font
+## Použitie AI
 
-# \- Bootstrap 5.3.8 – licencia MIT.
-
-# \- jQuery 4.0.0 – licencia MIT.
-
-# \- Inter – licencia SIL Open Font License 1.1.
-
-# Font je uložený lokálne vo formáte WOFF2 a načítaný cez @font-face. Text licencie fontu je v súbore fonts/LICENSE.txt.
-
-# Validácia
-
-# Výsledky validácie HTML a CSS sú uložené v priečinku docs.
-
-# Použitie AI
-
-# Pri návrhu riešenia, vysvetľovaní a tvorbe častí kódu bol použitý ChatGPT.
-
+Pri návrhu riešenia, vysvetľovaní a tvorbe častí kódu bol použitý ChatGPT.
